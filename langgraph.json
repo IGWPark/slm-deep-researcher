@@ -1,0 +1,11 @@
+{
+  "dockerfile_lines": [],
+  "graphs": {
+    "slm_deep_researcher": "slm_deep_researcher.graph:build_graph"
+  },
+  "python_version": "3.12",
+  "env": "./.env",
+  "dependencies": [
+    "."
+  ]
+}

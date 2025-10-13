@@ -1,0 +1,9 @@
+langgraph>=0.6.0
+langchain-openai>=0.3.0
+langchain-core>=0.3.0
+pydantic>=2.11.0
+python-dotenv>=1.0.0
+requests>=2.32.0
+duckduckgo-search>=8.0.0
+docling>=2.50.0
+rich>=14.0.0
