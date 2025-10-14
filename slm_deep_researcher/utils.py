@@ -24,6 +24,33 @@ _DOCUMENT_CONVERTER = DocumentConverter(
 )
 
 
+def build_search_query(
+    base_query: str,
+    sites: Optional[str] = None,
+    inurls: Optional[str] = None,
+) -> str:
+    """Builds search query with site: and inurl: operators."""
+    parts = [base_query]
+
+    if sites:
+        site_list = [s.strip() for s in sites.split(",") if s.strip()]
+        if len(site_list) == 1:
+            parts.append(f"site:{site_list[0]}")
+        elif len(site_list) > 1:
+            site_query = " OR ".join(f"site:{s}" for s in site_list)
+            parts.append(f"({site_query})")
+
+    if inurls:
+        inurl_list = [u.strip() for u in inurls.split(",") if u.strip()]
+        if len(inurl_list) == 1:
+            parts.append(f"inurl:{inurl_list[0]}")
+        elif len(inurl_list) > 1:
+            inurl_query = " OR ".join(f"inurl:{u}" for u in inurl_list)
+            parts.append(f"({inurl_query})")
+
+    return " ".join(parts)
+
+
 def strip_thinking_tokens(text: str) -> str:
     """Strips <think> blocks from reasoning models like Lucy."""
 
@@ -115,13 +142,18 @@ def duckduckgo_search(
     max_results: int,
     fetch_full_page: bool,
     region: str,
+    sites: Optional[str] = None,
+    inurls: Optional[str] = None,
 ) -> Dict[str, List[Dict[str, Any]]]:
+    """DuckDuckGo search with optional site and inurl filtering."""
     results: List[Dict[str, Any]] = []
+    enhanced_query = build_search_query(query, sites, inurls)
+
     try:
         with DDGS() as client:
             ddgs_results = list(
                 client.text(
-                    query,
+                    enhanced_query,
                     max_results=max_results,
                     region=region or "us-en",
                     safesearch="off",

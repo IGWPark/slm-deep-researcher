@@ -35,6 +35,8 @@ class Configuration(BaseModel):
     ddgs_region: str = Field(default="us-en")
     search_max_results: int = Field(default=3)
     max_tokens_per_source: int = Field(default=1000)
+    search_sites: Optional[str] = Field(default=None)
+    search_inurl: Optional[str] = Field(default=None)
 
     @classmethod
     def _collect_env_overrides(cls) -> dict[str, Any]:

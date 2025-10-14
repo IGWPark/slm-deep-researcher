@@ -111,6 +111,8 @@ def web_research(state: ResearchState, config: RunnableConfig) -> Dict[str, Any]
         max_results=cfg.search_max_results,
         fetch_full_page=cfg.fetch_full_page,
         region=state.ddgs_region or cfg.ddgs_region,
+        sites=cfg.search_sites,
+        inurls=cfg.search_inurl,
     )
     formatted_sources = deduplicate_and_format_sources(
         search_results,
