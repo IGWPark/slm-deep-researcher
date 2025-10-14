@@ -5,10 +5,23 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Union
 
 from ddgs import DDGS
-from docling.document_converter import DocumentConverter
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
 
 CHARS_PER_TOKEN = 4
-_DOCUMENT_CONVERTER = DocumentConverter()
+
+_PDF_PIPELINE_OPTIONS = PdfPipelineOptions(
+    do_ocr=False,
+    do_table_structure=False,
+    images_scale=1.0,
+)
+
+_DOCUMENT_CONVERTER = DocumentConverter(
+    format_options={
+        InputFormat.PDF: PdfFormatOption(pipeline_options=_PDF_PIPELINE_OPTIONS)
+    }
+)
 
 
 def strip_thinking_tokens(text: str) -> str:
