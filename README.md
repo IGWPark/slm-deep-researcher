@@ -90,6 +90,9 @@ SEARCH_MAX_RESULTS=3                           # Results per query
 FETCH_FULL_PAGE=True                           # Extract full page content
 USE_TOOL_CALLING=tools                         # "tools" or "json" mode
 DDGS_REGION=us-en                              # DuckDuckGo region
+
+SEARCH_SITES=                                  # Comma-separated domains (e.g., arxiv.org,reddit.com)
+SEARCH_INURL=                                  # Comma-separated URL patterns (e.g., news,blog)
 ```
 
 ## Usage
@@ -104,38 +107,61 @@ The server runs at `http://localhost:2024` by default.
 
 ## Example
 
-See [`notebooks/research_example.ipynb`](notebooks/research_example.ipynb) for complete implementation.
+### Multi-Source Research
 
-The agent generates queries dynamically and refines its search through multiple iterations:
+Run parallel research agents with different source filters:
 
-```
-🔍 Initial Query
-   environmental impact AI model training comparison 2025
-
-✓ Found 3 sources
-   The Carbon Footprint of Machine Learning Training...
-   Energy and Policy Considerations for Deep Learning in NLP
-   Quantifying the Carbon Emissions of Machine Learning
-
-📝 Summary updated
-
-🔍 Follow-up Query #1
-   energy consumption small models vs large models
-
-✓ Found 3 sources
-   Small Language Models: Survey, Measurements, and Insights
-   Efficient Large Language Models: A Survey
-
-📝 Summary updated
-
-🔍 Follow-up Query #2
-   carbon footprint distributed training thousands of models
-
-✓ Found 3 sources
-📝 Summary updated
+```bash
+python examples/multi_source_research.py
 ```
 
-The agent reflects on each summary to identify knowledge gaps, then generates new queries to fill those gaps.
+Demonstrates running multiple agents concurrently, each targeting different sources, with results saved as markdown reports.
+
+### API Usage
+
+Using the LangGraph API with configurable parameters:
+
+```python
+import requests
+
+response = requests.post(
+    "http://localhost:2024/runs/stream",
+    json={
+        "assistant_id": "your_assistant_id",
+        "input": {"research_topic": "your research topic"},
+        "config": {
+            "configurable": {
+                "search_sites": "arxiv.org,pubmed.gov",
+                "search_inurl": "research,study"
+            }
+        }
+    }
+)
+```
+
+### Filtering Options
+
+Target specific domains:
+```env
+SEARCH_SITES=arxiv.org,pubmed.gov
+```
+
+Filter by URL patterns:
+```env
+SEARCH_INURL=news,blog
+```
+
+Combine both filters:
+```python
+config = {
+    "configurable": {
+        "search_sites": "example.com,another.com",
+        "search_inurl": "article,post"
+    }
+}
+```
+
+The agent generates queries dynamically and refines its search through multiple iterations, reflecting on each summary to identify knowledge gaps and generate follow-up queries.
 
 ## Architecture
 
