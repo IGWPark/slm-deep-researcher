@@ -7,3 +7,4 @@ requests>=2.32.0
 duckduckgo-search>=8.0.0
 docling>=2.50.0
 rich>=14.0.0
+langgraph-cli[inmem]>=0.4.3
