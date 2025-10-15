@@ -1,21 +1,42 @@
-"""Quick token counting and text truncation."""
+"""Approximate token counting and truncation helpers."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+
+@dataclass
+class ApproximateTokenizer:
+    """Lightweight tokenizer that approximates 1 token per ~4 characters."""
+
+    chunk_size: int = 4
+
+    def encode(self, text: str) -> list[str]:
+        if not text:
+            return []
+        return [text[i : i + self.chunk_size] for i in range(0, len(text), self.chunk_size)]
+
+    def decode(self, tokens: list[str]) -> str:
+        return "".join(tokens)
+
+
+_TOKENIZER = ApproximateTokenizer()
 
 
 def count_tokens(text: str) -> int:
     if not text:
         return 0
-    return len(text) // 4
+    return len(_TOKENIZER.encode(text))
 
 
 def truncate_text(text: str, max_tokens: int) -> str:
     if not text:
         return text
-
-    max_chars = max_tokens * 4
-    if len(text) <= max_chars:
+    tokens = _TOKENIZER.encode(text)
+    if len(tokens) <= max_tokens:
         return text
-
-    return text[:max_chars] + "\n\n[Truncated]"
+    truncated = _TOKENIZER.decode(tokens[:max_tokens])
+    return truncated + "\n\n[Truncated]"
 
 
 def truncate_to_fit(

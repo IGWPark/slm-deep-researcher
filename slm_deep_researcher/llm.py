@@ -23,7 +23,7 @@ def _list_models(base_url: str, api_key: Optional[str]) -> list[str]:
     try:
         response = requests.get(url, headers=headers, timeout=5)
         response.raise_for_status()
-    except Exception as exc:  # pragma: no cover - network variability
+    except Exception as exc:
         raise RuntimeError(f"Failed to list models from {url}: {exc}") from exc
 
     payload = response.json()
@@ -91,3 +91,21 @@ def create_chat_model(
     else:
         kwargs["api_key"] = "placeholder"
     return ChatOpenAI(**kwargs)
+
+
+def resolve_model_name(
+    preferred: Optional[str],
+    *,
+    base_url: str,
+    api_key: Optional[str],
+) -> str:
+    """Resolve a usable model name, falling back to provider discovery."""
+
+    if preferred:
+        return preferred
+
+    discovered = _list_models(base_url, api_key)
+    if discovered:
+        return discovered[0]
+
+    raise ValueError("No model name provided and provider returned no models")

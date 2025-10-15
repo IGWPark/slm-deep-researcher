@@ -11,6 +11,7 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
 from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel, Field
+import httpx
 
 from .config import Configuration
 from .llm import create_chat_model
@@ -32,6 +33,7 @@ from .utils import (
     strip_thinking_tokens,
 )
 from .token import truncate_to_fit
+from .kg import await_graph_build, build_graph_workspace, schedule_graph_build
 
 
 def _invoke_tool_mode(config: Configuration, messages: list, tool_cls, max_tokens: int):
@@ -123,8 +125,115 @@ def web_research(state: ResearchState, config: RunnableConfig) -> Dict[str, Any]
         "search_query_history": [state.search_query],
         "sources_gathered": [format_sources(search_results)],
         "web_research_results": [formatted_sources],
+        "web_research_documents": [search_results],
         "research_loop_count": state.research_loop_count + 1,
     }
+
+
+async def start_graph_builder(state: ResearchState, config: RunnableConfig) -> Dict[str, Any]:
+    cfg = Configuration.from_runnable_config(config)
+    if not cfg.graph_builder_enabled or not state.web_research_documents:
+        return {}
+
+    latest = state.web_research_documents[-1]
+    results = latest.get("results") if isinstance(latest, dict) else latest
+    if not isinstance(results, list) or not results:
+        return {}
+
+    topic = state.research_topic or "Research Topic"
+    run_cfg = config.get("configurable", {}) or {}
+    run_id = run_cfg.get("thread_id")
+
+    if cfg.graph_collector_url:
+        payload = {
+            "workspace": cfg.graph_workspace,
+            "topic": topic,
+            "results": results,
+        }
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                await client.post(f"{cfg.graph_collector_url.rstrip('/')}/ingest", json=payload)
+        except Exception as exc:
+            print(f"Graph collector ingest failed: {exc}")
+        return {}
+
+    if not run_id:
+        try:
+            processed_now = await build_graph_workspace(
+                documents=results,
+                topic=topic,
+                cfg=cfg,
+                processed_urls=state.graph_indexed_urls or [],
+            )
+        except Exception as exc:
+            print(f"Graph builder agent encountered an error: {exc}")
+            return {}
+        if processed_now:
+            existing = set(state.graph_indexed_urls or [])
+            filtered = [url for url in processed_now if url not in existing]
+            if filtered:
+                return {"graph_indexed_urls": filtered}
+        return {}
+
+    schedule_graph_build(
+        run_id,
+        topic=topic,
+        documents=results,
+        cfg=cfg,
+        processed_urls=state.graph_indexed_urls or [],
+    )
+    return {}
+
+
+async def finalize_graph_builder(state: ResearchState, config: RunnableConfig) -> Dict[str, Any]:
+    cfg = Configuration.from_runnable_config(config)
+    if not cfg.graph_builder_enabled:
+        return {}
+
+    if cfg.graph_collector_url:
+        payload = {
+            "workspace": cfg.graph_workspace,
+            "topic": state.research_topic or "Research Topic",
+            "config": {
+                "graph_llm_model": cfg.graph_llm_model,
+                "graph_llm_base_url": cfg.graph_llm_base_url or cfg.llm_base_url,
+                "graph_llm_api_key": cfg.graph_llm_api_key or cfg.llm_api_key,
+                "graph_embedding_model": cfg.graph_embedding_model,
+                "graph_embedding_base_url": cfg.graph_embedding_base_url,
+                "graph_embedding_api_key": cfg.graph_embedding_api_key,
+                "graph_cosine_threshold": cfg.graph_cosine_threshold,
+                "graph_max_concurrent_requests": cfg.graph_max_concurrent_requests,
+            },
+        }
+        try:
+            async with httpx.AsyncClient(timeout=60) as client:
+                response = await client.post(
+                    f"{cfg.graph_collector_url.rstrip('/')}/build",
+                    json=payload,
+                )
+                response.raise_for_status()
+                processed_urls = response.json().get("processed", [])
+        except Exception as exc:
+            print(f"Graph collector build failed: {exc}")
+            return {}
+        if processed_urls:
+            existing = set(state.graph_indexed_urls or [])
+            filtered = [url for url in processed_urls if url not in existing]
+            if filtered:
+                return {"graph_indexed_urls": filtered}
+        return {}
+
+    run_id = (config.get("configurable", {}) or {}).get("thread_id")
+    if not run_id:
+        return {}
+
+    processed_urls = await await_graph_build(run_id)
+    if processed_urls:
+        existing = set(state.graph_indexed_urls or [])
+        filtered = [url for url in processed_urls if url not in existing]
+        if filtered:
+            return {"graph_indexed_urls": filtered}
+    return {}
 
 
 def summarize_sources(state: ResearchState, config: RunnableConfig) -> Dict[str, Any]:
@@ -228,15 +337,19 @@ def build_graph() -> StateGraph:
     graph = StateGraph(ResearchState, input_schema=ResearchInput, output_schema=ResearchOutput)
     graph.add_node("generate_query", generate_query)
     graph.add_node("web_research", web_research)
+    graph.add_node("start_graph_builder", start_graph_builder)
     graph.add_node("summarize_sources", summarize_sources)
     graph.add_node("reflect_on_summary", reflect_on_summary)
     graph.add_node("finalize_summary", finalize_summary)
+    graph.add_node("finalize_graph_builder", finalize_graph_builder)
 
     graph.add_edge(START, "generate_query")
     graph.add_edge("generate_query", "web_research")
-    graph.add_edge("web_research", "summarize_sources")
+    graph.add_edge("web_research", "start_graph_builder")
+    graph.add_edge("start_graph_builder", "summarize_sources")
     graph.add_edge("summarize_sources", "reflect_on_summary")
     graph.add_conditional_edges("reflect_on_summary", route_research)
-    graph.add_edge("finalize_summary", END)
+    graph.add_edge("finalize_summary", "finalize_graph_builder")
+    graph.add_edge("finalize_graph_builder", END)
 
     return graph

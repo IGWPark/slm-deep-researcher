@@ -135,7 +135,7 @@ def fetch_raw_content(url: str) -> Optional[str]:
         if not document:
             return None
         return document.export_to_markdown()
-    except Exception as exc:  # pragma: no cover - network variability
+    except Exception as exc:
         print(f"Warning: Docling failed for {fetch_url}: {exc}")
         return None
 

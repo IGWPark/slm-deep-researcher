@@ -37,6 +37,28 @@ class Configuration(BaseModel):
     max_tokens_per_source: int = Field(default=1000)
     search_sites: Optional[str] = Field(default=None)
     search_inurl: Optional[str] = Field(default=None)
+    graph_builder_enabled: bool = Field(default=False)
+    graph_workspace: str = Field(default="graph_workspace")
+    graph_chunk_size: int = Field(default=1200)
+    graph_chunk_overlap: int = Field(default=120)
+    graph_min_chunk_tokens: int = Field(default=40)
+    graph_chunk_split_paragraphs: bool = Field(default=False)
+    graph_entity_types: str = Field(
+        default="Person,Organization,Location,Concept,Event,Artifact,Other"
+    )
+    graph_language: str = Field(default="English")
+    graph_file_label: str = Field(default="graph_agent")
+    graph_llm_model: Optional[str] = Field(default=None)
+    graph_llm_base_url: Optional[str] = Field(default=None)
+    graph_llm_api_key: Optional[str] = Field(default=None)
+    graph_llm_max_output_tokens: int = Field(default=512)
+    graph_embedding_model: Optional[str] = Field(default=None)
+    graph_embedding_base_url: Optional[str] = Field(default=None)
+    graph_embedding_api_key: Optional[str] = Field(default=None)
+    graph_embedding_dim: int = Field(default=1024)
+    graph_cosine_threshold: float = Field(default=0.3)
+    graph_max_concurrent_requests: int = Field(default=4)
+    graph_collector_url: Optional[str] = Field(default=None)
 
     @classmethod
     def _collect_env_overrides(cls) -> dict[str, Any]:
