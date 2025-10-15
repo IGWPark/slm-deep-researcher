@@ -90,9 +90,6 @@ SEARCH_MAX_RESULTS=3                           # Results per query
 FETCH_FULL_PAGE=True                           # Extract full page content
 USE_TOOL_CALLING=tools                         # "tools" or "json" mode
 DDGS_REGION=us-en                              # DuckDuckGo region
-
-SEARCH_SITES=                                  # Comma-separated domains (e.g., arxiv.org,reddit.com)
-SEARCH_INURL=                                  # Comma-separated URL patterns (e.g., news,blog)
 ```
 
 ## Usage
@@ -131,8 +128,8 @@ response = requests.post(
         "input": {"research_topic": "your research topic"},
         "config": {
             "configurable": {
-                "search_sites": "arxiv.org,pubmed.gov",
-                "search_inurl": "research,study"
+                "search_sites": "en.wikipedia.org",
+                "search_inurl": "wiki"
             }
         }
     }
@@ -142,21 +139,21 @@ response = requests.post(
 ### Filtering Options
 
 Target specific domains:
-```env
-SEARCH_SITES=arxiv.org,pubmed.gov
+```python
+config = {"configurable": {"search_sites": ".edu,en.wikipedia.org"}}
 ```
 
 Filter by URL patterns:
-```env
-SEARCH_INURL=news,blog
+```python
+config = {"configurable": {"search_inurl": "news,blog"}}
 ```
 
 Combine both filters:
 ```python
 config = {
     "configurable": {
-        "search_sites": "example.com,another.com",
-        "search_inurl": "article,post"
+        "search_sites": ".edu,.gov",
+        "search_inurl": "research"
     }
 }
 ```

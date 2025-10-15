@@ -23,13 +23,13 @@ REPORTS_DIR = Path("reports")
 AGENTS = {
     "academic": {
         "name": "Academic Research",
-        "config": {"search_sites": "arxiv.org/pdf"},
+        "config": {"search_sites": ".edu"},
         "emoji": "📚",
     },
-    "expert": {
-        "name": "Expert Sites",
-        "config": {"search_sites": "mumsnet.com,parents.com"},
-        "emoji": "👨‍⚕️",
+    "blog": {
+        "name": "Blog",
+        "config": {"search_inurl": "blog"},
+        "emoji": "✍️",
     },
     "community": {
         "name": "Community Discussion",
@@ -43,7 +43,7 @@ AGENTS = {
     },
     "news": {
         "name": "News Articles",
-        "config": {"search_inurl": "news,health"},
+        "config": {"search_inurl": "news"},
         "emoji": "📰",
     },
 }
