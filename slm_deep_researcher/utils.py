@@ -125,14 +125,18 @@ def format_sources(search_results: Dict[str, Any]) -> str:
 def fetch_raw_content(url: str) -> Optional[str]:
     """Fetches full page content and converts it to markdown using Docling."""
 
+    fetch_url = url
+    if "www.reddit.com" in url:
+        fetch_url = url.replace("www.reddit.com", "old.reddit.com")
+
     try:
-        conversion = _DOCUMENT_CONVERTER.convert(url)
+        conversion = _DOCUMENT_CONVERTER.convert(fetch_url)
         document = getattr(conversion, "document", None)
         if not document:
             return None
         return document.export_to_markdown()
     except Exception as exc:  # pragma: no cover - network variability
-        print(f"Warning: Docling failed for {url}: {exc}")
+        print(f"Warning: Docling failed for {fetch_url}: {exc}")
         return None
 
 

@@ -33,7 +33,7 @@ AGENTS = {
     },
     "community": {
         "name": "Community Discussion",
-        "config": {"search_sites": "old.reddit.com/r/Parenting"},
+        "config": {"search_sites": "reddit.com/r/Parenting"},
         "emoji": "💬",
     },
     "wiki": {
