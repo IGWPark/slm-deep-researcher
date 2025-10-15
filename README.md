@@ -26,6 +26,8 @@ To make this work with small language models, the following modifications were m
 
 **Provider Support**: Compatible with any OpenAI-compatible server (vLLM, Ollama, etc).
 
+**Graph Capability**: Optional collector service extracts entities/relations with the same SLM and merges them into a LightRAG-compatible graph (graphML + NanoVectorDB JSON), enabling downstream graph-based retrieval or visualization.
+
 ## Tested Environment
 
 - Model: [Menlo/Lucy-1.7B-v1.0](https://huggingface.co/Menlo/Lucy) (Qwen3-1.7B base)
@@ -113,6 +115,40 @@ python examples/multi_source_research.py
 ```
 
 Demonstrates running multiple agents concurrently, each targeting different sources, with results saved as markdown reports.
+
+### Graph-Enabled Research
+
+We treat entity/relation extraction as a first-class capability for small models: the collector service buffers raw sources, calls the SLM to extract structured knowledge, and builds a LightRAG-compatible graph (graphML + NanoVectorDB JSON). That graph can be visualized with NetworkX or served via LightRAG.
+
+1. Install optional graph dependencies (collector API + LightRAG runtime):
+
+   ```bash
+   pip install -r requirements-graph.txt
+   ```
+
+2. Launch the collector service (separate terminal):
+
+   ```bash
+   python -m slm_deep_researcher.graph_collector
+   ```
+
+3. Run the wiki/blog/news example with the collector enabled so all sources merge into one graph:
+
+   ```bash
+   GRAPH_COLLECTOR_URL=http://127.0.0.1:8085 python examples/graph_enabled_research.py
+   ```
+
+   Reports land in `reports/`, and the combined LightRAG workspace is written to `graph_outputs_server/<timestamp>/`.
+
+4. Inspect or serve the graph:
+
+   ```bash
+   lightrag-server --workspace graph_outputs_server/<timestamp>
+   ```
+
+   (You can also load the GraphML into NetworkX or other graph tooling.)
+
+If you skip `GRAPH_COLLECTOR_URL`, the script falls back to building the graph locally after each run.
 
 ### API Usage
 
