@@ -127,6 +127,11 @@ We treat entity/relation extraction as a first-class capability for small models
    ```
 
 2. Launch the collector service (separate terminal):
+   ```bash
+   vllm serve Qwen/Qwen3-Embedding-0.6B \
+     --task embed \
+     --port 8001
+   ```
 
    ```bash
    python -m slm_deep_researcher.graph_collector
